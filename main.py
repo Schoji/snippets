@@ -5,7 +5,7 @@ from random import randint
 
 root = Tk()
 root.title("słówka")
-root.geometry("400x300")
+root.geometry("800x600")
 
 czcionka = ("Calibri", 20, "bold")
 
@@ -23,47 +23,89 @@ pokaz.pack()
 wprowadzanie.pack()
 wpis_slowko.pack()
 pop_slowko.pack()
+
 if learning:
     ilosc_slowek.pack()
 
 rezultat.pack()
 
+word_file = "slowka.txt" # path or file with words
 
-
-class plik():
+class ReadFile():
     def __init__(self):
-        f = open("slowka.txt", "r", encoding="utf-8")
+        opened_file = open(word_file, "r", encoding="utf-8")
+
         self.slowka = {}
-        for i in f:
-            self.slowka[(i.split("-")[0]).strip()] = (i.split("-")[1]).strip()
-        f.close()
+        
+        # for single_word in opened_file:
+        #     self.slowka[(single_word.split("-")[0]).strip()] = (single_word.split("-")[1]).strip() old way of handling word files
+        
+        for line in opened_file.readlines():
+            is_Definition = False
+            definition_word = ""
+            meaning_words = []
+            word = ""
+            for letter in line:
+                if letter in "-" and not is_Definition:
+                    is_Definition = True
+                    word = self.CheckAndRemoveLastSpace(word) # chop off the last character of a word if it is a space
+                    definition_word = word
+                    word = ""
+
+                elif letter in "/\n" and is_Definition:
+                    word = self.CheckAndRemoveLastSpace(word) # chop off the last character of a word if it is a space
+                    meaning_words.append(word)
+                    word = ""
+
+                else:
+                    word += letter
+            
+            for meaning_word in meaning_words:
+                self.slowka[definition_word] = meaning_word.strip()
+                
+        print(self.slowka)
+
+        opened_file.close()
+    
+    def CheckAndRemoveLastSpace(self, word):
+        if word[-1] in " ":
+            word = word[:-1]
+        return word
+
+####################################################################
 
 class Losowanie():
     def __init__(self):
         self.__ilosc_slowek__ = len(App.slowka)
         self.__dzielnik__ = int(len(App.slowka) // 4)
+        self.definicja = 0
         self.uzyte_slowka = []
         self.NieudaneSlowka = []
+        self.__id_slowka__ = 0
         self.noweSlowko()
         
     liczbaProb = 1
     def noweSlowko(self):
         while True:
             if self.czyPowtorka():
-                losowa = self.getZepsuteSlowko()
+                self.__id_slowka__ = self.getZepsuteSlowko()
+                # print("ID TRAFIONEGO SŁÓWKA TO:" + str(self.__id_slowka__))
+                # print("A Z TEGO WYNIKA ŻE SŁÓWKO TO" + str(App.slowka[list(App.slowka)[self.__id_slowka__]]))
+                break
             else:
-                losowa = randint(0, len(App.slowka) - 1) #losowa
-                if losowa not in self.uzyte_slowka or len(self.uzyte_slowka) == self.__ilosc_slowek__:
+                self.__id_slowka__ = randint(0, len(App.slowka) - 1) #losowa
+                if self.__id_slowka__ not in self.uzyte_slowka:
                     break
                 # elif len(self.NieudaneSlowka) > 0:
                 #     losowa = self.getZepsuteSlowko()
 
+        if self.__id_slowka__ not in self.NieudaneSlowka:
+            self.ZbanowaneSlowka(self.__id_slowka__)
+        
+        self.slowko = list(App.slowka)[self.__id_slowka__]
+        self.definicja = App.slowka[list(App.slowka)[self.__id_slowka__]]
 
-        self.ZbanowaneSlowka(losowa)
-        
-        self.slowko = list(App.slowka)[losowa]
-        
-        pokaz.configure(text=App.slowka[list(App.slowka)[losowa]]) #pokazywanie na ekranie
+        pokaz.configure(text=self.definicja) #pokazywanie na ekranie
 
     def sprawdzWynik(self):
         podane_slowo = wprowadzanie.get()
@@ -78,10 +120,12 @@ class Losowanie():
             wpis_slowko.configure(text=podane_slowo)
             pop_slowko.configure(text=self.slowko, foreground="red")
 
-            self.addZepsuteSlowko(self.slowko)
+            self.addZepsuteSlowko(self.__id_slowka__)
 
-            print(list(podane_slowo))
-            print(list(self.slowko))
+            # print(list(podane_slowo))
+            # print(list(self.slowko))
+        slowka_ktore_byly = Label(root, text=str(self.slowko) + " - " + str(self.definicja), font=czcionka).pack()
+        
 
         self.noweSlowko()
         if learning:
@@ -96,25 +140,35 @@ class Losowanie():
         print("Uzyte slowa - "+ str(self.uzyte_slowka))
     
     def getZepsuteSlowko(self):
-        return self.NieudaneSlowka.pop(0)
+        if len(self.NieudaneSlowka) > 0:
+            return self.NieudaneSlowka.pop(0)
     
     def addZepsuteSlowko(self, slowko):
         self.NieudaneSlowka.append(slowko)
 
     def czyPowtorka(self):
-        losowa = randint(0, 5)
-        tries = self.liczbaProb
-        while tries:
-            if losowa == 0:
-                print("Czas na zepsute slowko!")
-                self.liczbaProb = 1
-                return True
-            else:
-                self.liczbaProb=+1
-            tries-=1
-        return False
+        if len(self.NieudaneSlowka) <= 0: #nie ciągnij skurwysynu słówek jak jeszcze nie ma żadnych
+            return False
+        elif len(self.NieudaneSlowka) > 5:
+            return True
+        else:
+            print("Liczba prób " + str(self.liczbaProb))
+            print("Zepsute słówka " + str(self.NieudaneSlowka))
+            losowa = randint(0, 5)
+            tries = self.liczbaProb
+            # print("SZANSE NA SŁÓWKO WYNOSZĄ " + str(5//tries) + "%")
+            while tries:
+                if losowa == 0:
+                    print("Czas na zepsute slowko!")
+                    print("Zepsute słówko to: " + str(App.slowka[list(App.slowka)[losowa]]))
+                    self.liczbaProb = 1
+                    return True
+                else:
+                    self.liczbaProb += 1
+                tries-=1
+            return False
 
-App = plik()
+App = ReadFile()
 Losowansko = Losowanie()
 
 def key_pressed(event):
