@@ -36,7 +36,6 @@ class plik():
         self.slowka = {}
         for i in f:
             self.slowka[(i.split("-")[0]).strip()] = (i.split("-")[1]).strip()
-            print(i)
         f.close()
 
 class Losowanie():
@@ -46,12 +45,20 @@ class Losowanie():
         self.uzyte_slowka = []
         self.NieudaneSlowka = []
         self.noweSlowko()
-
+        
+    liczbaProb = 1
     def noweSlowko(self):
         while True:
-            losowa = randint(0, len(App.slowka) - 1) #losowa
-            if losowa not in self.uzyte_slowka or len(self.uzyte_slowka) == self.__ilosc_slowek__:
-                break
+            if self.czyPowtorka():
+                losowa = self.getZepsuteSlowko()
+            else:
+                losowa = randint(0, len(App.slowka) - 1) #losowa
+                if losowa not in self.uzyte_slowka or len(self.uzyte_slowka) == self.__ilosc_slowek__:
+                    break
+                # elif len(self.NieudaneSlowka) > 0:
+                #     losowa = self.getZepsuteSlowko()
+
+
         self.ZbanowaneSlowka(losowa)
         
         self.slowko = list(App.slowka)[losowa]
@@ -71,6 +78,8 @@ class Losowanie():
             wpis_slowko.configure(text=podane_slowo)
             pop_slowko.configure(text=self.slowko, foreground="red")
 
+            self.addZepsuteSlowko(self.slowko)
+
             print(list(podane_slowo))
             print(list(self.slowko))
 
@@ -85,8 +94,25 @@ class Losowanie():
                 self.uzyte_slowka.pop(0)
 
         print("Uzyte slowa - "+ str(self.uzyte_slowka))
-        
+    
+    def getZepsuteSlowko(self):
+        return self.NieudaneSlowka.pop(0)
+    
+    def addZepsuteSlowko(self, slowko):
+        self.NieudaneSlowka.append(slowko)
 
+    def czyPowtorka(self):
+        losowa = randint(0, 5)
+        tries = self.liczbaProb
+        while tries:
+            if losowa == 0:
+                print("Czas na zepsute slowko!")
+                self.liczbaProb = 1
+                return True
+            else:
+                self.liczbaProb=+1
+            tries-=1
+        return False
 
 App = plik()
 Losowansko = Losowanie()
