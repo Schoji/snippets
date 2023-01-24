@@ -39,24 +39,27 @@ class ReadFile():
         
         # for single_word in opened_file:
         #     self.slowka[(single_word.split("-")[0]).strip()] = (single_word.split("-")[1]).strip() old way of handling word files
-        
+        wordset_count = 1
         for line in opened_file.readlines():
-            is_Definition = False
+            is_Origin = False
             is_Commented = False #if the word is commented with "#" that means it shall be not put in the word bank
-            definition_word = ""
-            meaning_words = []
+            origin_words = []
+            translations = []
             word = ""
             for letter in line:
-                if letter in "-" and not is_Definition:
-                    is_Definition = True
+                if letter in "-" and not is_Origin:
+                    is_Origin = True
                     word = self.CheckAndRemoveLastSpace(word) # chop off the last character of a word if it is a space
-                    definition_word = word
+                    origin_words.append(word.strip())
                     word = ""
-
-                elif letter in "/\n" and is_Definition:
+                elif letter in "/\n":
                     word = self.CheckAndRemoveLastSpace(word) # chop off the last character of a word if it is a space
-                    meaning_words.append(word)
+                    if is_Origin:
+                        translations.append(word.strip())
+                    else:
+                        origin_words.append(word.strip())
                     word = ""
+                
                 elif letter in "#":
                     is_Commented = True
                     word = ""
@@ -65,11 +68,16 @@ class ReadFile():
                     word += letter
 
             if not is_Commented:
-                for meaning_word in meaning_words:
-                    self.slowka[definition_word] = meaning_word.strip()
-            else:
-                is_Commented
+                wordset = {}
+                wordset["origins"] = origin_words
+                wordset["translations"] = translations
 
+                self.slowka[wordset_count] = wordset
+                wordset_count += 1
+
+                
+
+        print(self.slowka)
         opened_file.close()
     
     def CheckAndRemoveLastSpace(self, word):
@@ -91,11 +99,11 @@ class Losowanie():
         
     liczbaProb = 1
         
-    def getWordDefinitionById(self, id):
-        return WordBank.slowka[list(WordBank.slowka)[id]]
+    def getWordOriginById(self, id):
+        return WordBank.slowka[id]["origins"]
 
     def getWordMeaningById(self, id):
-        return list(WordBank.slowka)[id]
+        return WordBank.slowka[id]["translations"]
 
     def noweSlowko(self):
         while True:
@@ -114,16 +122,20 @@ class Losowanie():
         if self.__id_slowka__ not in self.NieudaneSlowka:
             self.ZbanowaneSlowka(self.__id_slowka__)
         
-        self.slowko = self.getWordMeaningById(self.__id_slowka__)
-        self.definicja = self.getWordDefinitionById(self.__id_slowka__)
+        self.slowko = self.getWordOriginById(self.__id_slowka__)
+        self.definicja = self.getWordMeaningById(self.__id_slowka__)
 
         pokaz.configure(text=self.definicja) #pokazywanie na ekranie
 
     def sprawdzWynik(self):
-        podane_slowo = wprowadzanie.get()
+        podane_slowo = wprowadzanie.get().lower()
 
         wprowadzanie.delete(0, END)
-        if (podane_slowo.lower() == self.slowko.lower()): #jeżeli dobrze wpiszemy słowo
+        # if isinstance(self.getWordOriginById(self.__id_slowka__), str):
+        #     print("chuj")
+        print(self.slowko)
+        if (podane_slowo in self.slowko): #jeżeli dobrze wpiszemy słowo
+            print("gowno")
 
             pop_slowko.configure(text=self.slowko, foreground="green")
             wpis_slowko.configure(text="")
@@ -136,7 +148,17 @@ class Losowanie():
 
             # print(list(podane_slowo))
             # print(list(self.slowko))
-        slowka_ktore_byly = Label(root, text=str(self.slowko) + " - " + str(self.definicja), font=czcionka).pack()
+
+        gowno = ""
+        for i in self.slowko:
+            gowno += i + "/"
+        gowno = gowno[:-1]
+        gowno1 = ""
+        for i in self.definicja:
+            gowno1 += i + "/"
+        gowno1 = gowno1[:-1]
+
+        slowka_ktore_byly = Label(root, text=gowno + " - " + gowno1, font=czcionka).pack()
         
 
         self.noweSlowko()
@@ -171,8 +193,8 @@ class Losowanie():
             # print("SZANSE NA SŁÓWKO WYNOSZĄ " + str(5//tries) + "%")
             while tries:
                 if losowa == 0:
-                    print("Czas na zepsute slowko!")
-                    print("Zepsute słówko to: " + str(WordBank.slowka[list(WordBank.slowka)[losowa]]))
+                    # print("Czas na zepsute slowko!")
+                    # print("Zepsute słówko to: " + self.getWordOriginById(self.__id_slowka__))
                     self.liczbaProb = 1
                     return True
                 else:
@@ -197,5 +219,4 @@ baton.pack()
 
 root.mainloop()
 
-#todo napisać inaczej wordbank, żeby mozna było mieć więcej definicji i napisać warunek który umożliwi podanie
-#jednej z dwóch opcji
+#naprawić kurwa tries w CzyPowtórka i zbanowane słówka
