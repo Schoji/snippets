@@ -42,6 +42,7 @@ class ReadFile():
         
         for line in opened_file.readlines():
             is_Definition = False
+            is_Commented = False #if the word is commented with "#" that means it shall be not put in the word bank
             definition_word = ""
             meaning_words = []
             word = ""
@@ -56,14 +57,18 @@ class ReadFile():
                     word = self.CheckAndRemoveLastSpace(word) # chop off the last character of a word if it is a space
                     meaning_words.append(word)
                     word = ""
-
+                elif letter in "#":
+                    is_Commented = True
+                    word = ""
+                    break
                 else:
                     word += letter
-            
-            for meaning_word in meaning_words:
-                self.slowka[definition_word] = meaning_word.strip()
-                
-        print(self.slowka)
+
+            if not is_Commented:
+                for meaning_word in meaning_words:
+                    self.slowka[definition_word] = meaning_word.strip()
+            else:
+                is_Commented
 
         opened_file.close()
     
@@ -76,8 +81,8 @@ class ReadFile():
 
 class Losowanie():
     def __init__(self):
-        self.__ilosc_slowek__ = len(App.slowka)
-        self.__dzielnik__ = int(len(App.slowka) // 4)
+        self.__ilosc_slowek__ = len(WordBank.slowka)
+        self.__dzielnik__ = int(len(WordBank.slowka) // 4)
         self.definicja = 0
         self.uzyte_slowka = []
         self.NieudaneSlowka = []
@@ -85,15 +90,22 @@ class Losowanie():
         self.noweSlowko()
         
     liczbaProb = 1
+        
+    def getWordDefinitionById(self, id):
+        return WordBank.slowka[list(WordBank.slowka)[id]]
+
+    def getWordMeaningById(self, id):
+        return list(WordBank.slowka)[id]
+
     def noweSlowko(self):
         while True:
             if self.czyPowtorka():
                 self.__id_slowka__ = self.getZepsuteSlowko()
                 # print("ID TRAFIONEGO SŁÓWKA TO:" + str(self.__id_slowka__))
-                # print("A Z TEGO WYNIKA ŻE SŁÓWKO TO" + str(App.slowka[list(App.slowka)[self.__id_slowka__]]))
+                # print("A Z TEGO WYNIKA ŻE SŁÓWKO TO" + str(WordBank.slowka[list(WordBank.slowka)[self.__id_slowka__]]))
                 break
             else:
-                self.__id_slowka__ = randint(0, len(App.slowka) - 1) #losowa
+                self.__id_slowka__ = randint(0, len(WordBank.slowka) - 1) #losowa
                 if self.__id_slowka__ not in self.uzyte_slowka:
                     break
                 # elif len(self.NieudaneSlowka) > 0:
@@ -102,8 +114,8 @@ class Losowanie():
         if self.__id_slowka__ not in self.NieudaneSlowka:
             self.ZbanowaneSlowka(self.__id_slowka__)
         
-        self.slowko = list(App.slowka)[self.__id_slowka__]
-        self.definicja = App.slowka[list(App.slowka)[self.__id_slowka__]]
+        self.slowko = self.getWordMeaningById(self.__id_slowka__)
+        self.definicja = self.getWordDefinitionById(self.__id_slowka__)
 
         pokaz.configure(text=self.definicja) #pokazywanie na ekranie
 
@@ -160,7 +172,7 @@ class Losowanie():
             while tries:
                 if losowa == 0:
                     print("Czas na zepsute slowko!")
-                    print("Zepsute słówko to: " + str(App.slowka[list(App.slowka)[losowa]]))
+                    print("Zepsute słówko to: " + str(WordBank.slowka[list(WordBank.slowka)[losowa]]))
                     self.liczbaProb = 1
                     return True
                 else:
@@ -168,16 +180,22 @@ class Losowanie():
                 tries-=1
             return False
 
-App = ReadFile()
+WordBank = ReadFile()
 Losowansko = Losowanie()
 
-def key_pressed(event):
+def submitOnReturn(event):
     Losowansko.sprawdzWynik()
 
+def killOnEsc(event):
+    root.destroy()
+
 baton = Button(root, text="dymy dymy", command=Losowansko.sprawdzWynik)
-root.bind("<Return>", key_pressed)
+root.bind("<Return>", submitOnReturn)
+root.bind("<Escape>", killOnEsc)
 baton.pack()
 
 
 root.mainloop()
 
+#todo napisać inaczej wordbank, żeby mozna było mieć więcej definicji i napisać warunek który umożliwi podanie
+#jednej z dwóch opcji
